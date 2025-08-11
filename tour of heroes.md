@@ -299,10 +299,12 @@ Create a Hero interface in its own file in the src/app directory . Give it id an
 Note that an interface works exactly the same between Angular and React.   
 
 ```ts
+
 export interface Hero {
   id: number;
   name: string;
 }
+
 ```
 
 
@@ -311,6 +313,7 @@ Update the HeroesComponent such that.
 
 src/app/heroes/heroes.component.ts   
 ```ts
+
 import { Component } from '@angular/core';
 import { Hero } from '../hero';
 
@@ -325,13 +328,16 @@ export class HeroesComponent {
     name: 'Windstorm'
   };
 }
+
 ```
    
 heroes.component.html   
 ```html
+
 <h2>{{hero.name}} Details</h2>
 <div><span>id: </span>{{hero.id}}</div>
 <div><span>name: </span>{{hero.name}}</div>
+
 ```
 
 #### React   
@@ -340,6 +346,7 @@ Update the Heroes component such that.
 Heroes.tsx   
 
 ```tsx
+
 import React from "react";
 import { Hero } from "../app/Hero";
 
@@ -383,22 +390,24 @@ export default Heroes;
 
 ### Edit the hero   
 
-Users should be able to edit the heros name in an <input> textbox.
+Users should be able to edit the heros name in an `<input>` textbox.
 
 #### Angular   
 Setup two way binding.   
 
-1. Add the ngModel attribute such that.   
+1. Update the src/app/heroes/heroes.component.html    
 ```html
 <div>
   <label for="name">Hero name: </label>
   <input id="name" [(ngModel)]="hero.name" placeholder="name">
 </div>
 ```
+
 2. Import the Forms module in the app.module.ts   
 ```ts
 import { FormsModule } from '@angular/forms'; // <-- NgModel lives here
 ```
+
 3. Update the imports in the app.module.ts   
 ```ts
 imports: [
@@ -411,7 +420,11 @@ imports: [
 ### React   
 Setup two way binding.   
 
-useState manages internal state. Convert. 
+useState manages internal state. 
+
+1. Update the Heroes.tsx component
+
+FROM 
 ```ts
   const hero: Hero = {
     id: 1,
@@ -419,7 +432,7 @@ useState manages internal state. Convert.
   };
 ```
    
-To:
+TO 
 ```ts
  const [hero, setHero] = useState<Hero>({
     id: 1,
@@ -432,13 +445,11 @@ Update the component such that.
 import React, { ChangeEvent, useState } from "react";
 import { Hero } from "../app/Hero";
 
-const Heroes: React.FC = () => {
-    
+const Heroes: React.FC = () => {    
   const [hero, setHero] = useState<Hero>({
     id: 1,
     name: "Windstorm",
   });
-
   const handleHeroNameChanged = (event: ChangeEvent<HTMLInputElement>) => {
     const newHeroName = event.target.value;
     setHero((prevHero) => ({
@@ -498,6 +509,7 @@ export const HEROES: Hero[] = [
 
 src/app/heroes/heroes.component.ts    
 ```ts
+
 import {Component} from '@angular/core';
 import {
   NgIf,
@@ -530,11 +542,13 @@ export class HeroesComponent {
     this.selectedHero = hero;
   }
 }
+
 ```
    
 
 src/app/heroes/heroes.component.html
 ```html
+
 <h2>My Heroes</h2>
 <ul class="heroes">
   <li *ngFor="let hero of heroes">
@@ -553,6 +567,7 @@ src/app/heroes/heroes.component.html
     <input id="hero-name" [(ngModel)]="selectedHero.name" placeholder="name">
   </div>
 </div>
+
 ```
    
 ##### Summary   
@@ -568,6 +583,7 @@ src/app/heroes/heroes.component.html
 
 src/components/Hereos.tsx   
 ```tsx
+
 import React, { useState } from "react";
 import { Hero } from "../app/Hero";
 import { HEROES } from "../app/mock-heroes";
@@ -854,3 +870,116 @@ export default Heroes;
 - You created a separate, reusable `HeroDetail` component.  
 - You passed data from the parent `Heroes` component to the child `HeroDetail` component using props.  
 - You accessed the `hero` prop inside the `HeroDetail` component to display the passed-in data from `Heroes`.
+
+## 4. Add Services.   
+
+Move fetching of data from a component to a service and inject the service into the component through dependency injection.   
+
+### Angular   
+
+Create the HeroService.   
+Run the `ng generate service hero` to create a service called hero.   
+
+src/app/hero.service.ts   
+
+```ts
+import { Injectable } from '@angular/core';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class HeroService {
+
+  constructor() { }
+
+}
+```
+
+@Injectable() decorator marks the class as one that participates in the *dependency injection system*.
+
+#### Get hero data (still mock)   
+
+src/app/hero.service.ts   
+```ts
+import { Hero } from './hero';
+import { HEROES } from './mock-heroes';
+
+getHeroes(): Hero[] {
+  return HEROES;
+}
+
+```
+
+Update the heroes component to use the heroes service.   
+
+src/app/heroes/heroes.component.ts   
+```ts
+import { HeroService } from '../hero.service';
+```
+
+update the definition of heroes.   
+```ts
+heroes: Hero[] = [];
+```
+
+update the constructor   
+```ts
+constructor(private heroService: HeroService) {}
+```
+
+Add getHeroes() method   
+```ts
+getHeroes(): void {
+  this.heroes = this.heroService.getHeroes();
+}
+```
+
+### React   
+
+Create a HeroService.ts   
+
+```ts
+import { HEROES } from "../app/mock-heroes";
+
+const useHeroService = () => {
+  const getHeroes = async () => {
+    return HEROES.map((hero) => ({
+      ...hero,
+    }));
+  };
+
+  return { getHeroes };
+};
+
+export default useHeroService;
+```
+
+Update the Heroes component.   
+
+1. Import the HeroService.ts   
+```ts
+import useHeroService from "../services/HeroService";
+```
+
+2. declare the getHeroes function.   
+```ts
+const getHeroes = useHeroService();
+```
+
+3. update the heroes variable such that.
+```ts
+  const [heroes, setHeroes] = useState<Hero[]>([]);
+```
+
+4. fetch data   
+```ts
+  useEffect(() => {
+    const fetchHeroes = async () => {
+      const fetchedHeroes = await getHeroes.getHeroes();
+      setHeroes(fetchedHeroes);
+    };
+    fetchHeroes();
+  }, []);
+```
+
+## 5. 
